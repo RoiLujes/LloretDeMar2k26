@@ -1,252 +1,374 @@
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --blue:#0ea5e9;
-  --blue-dark:#0284c7;
-  --gold:#f59e0b;
-  --orange:#f97316;
-  --red:#ef4444;
-  --green:#22c55e;
-  --text:#0f172a;
-  --text-light:#64748b;
-  --bg:#f0f9ff;
-  --card:#ffffff;
-  --border:#e2e8f0;
-  --radius:18px;
-  --radius-sm:10px;
-  --shadow:0 4px 24px rgba(0,0,0,0.08);
-  --shadow-lg:0 8px 40px rgba(0,0,0,0.18);
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌊 Lloret 2026</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="header-content">
+    <span class="wave-emoji">🌊</span>
+    <h1>Lloret de Mar 2026</h1>
+    <p class="header-sub">Vote pour ton logement préféré !</p>
+    <div class="header-chips">
+      <span>📅 Août 2026</span>
+      <span>🌙 7 nuits</span>
+      <span>👥 9 personnes</span>
+    </div>
+  </div>
+</header>
+
+<div id="adminBar" class="admin-bar" style="display:none">
+  <span>👑 Mode Admin activé</span>
+  <button class="btn-logout" onclick="logout()">Déconnexion</button>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="overlay" id="loginOverlay" style="display:none">
+  <div class="modal login-modal">
+    <button class="close-btn" onclick="document.getElementById('loginOverlay').style.display='none'">✕</button>
+    <div class="modal-icon">👑</div>
+    <h2>Accès Admin</h2>
+    <p>Réservé à l'organisateur</p>
+    <input type="password" id="pwInput" class="input-field" placeholder="Mot de passe..."
+      onkeydown="if(event.key==='Enter')checkLogin()">
+    <button class="btn-primary" onclick="checkLogin()">Se connecter</button>
+    <div id="loginError" class="error-msg"></div>
+  </div>
+</div>
+
+<!-- VOTE MODAL -->
+<div class="overlay" id="voteOverlay" style="display:none">
+  <div class="modal vote-modal">
+    <button class="close-btn" onclick="document.getElementById('voteOverlay').style.display='none'">✕</button>
+    <h2>🗳️ Voter pour cette annonce</h2>
+    <p>Entre ton prénom pour voter (1 vote par personne)</p>
+    <input type="text" id="voterName" class="input-field" placeholder="Ton prénom...">
+    <button class="btn-primary" onclick="confirmVote()">Valider mon vote ✅</button>
+    <div id="voteError" class="error-msg"></div>
+  </div>
+</div>
+
+<main>
+  <div class="section-title">
+    <h2>🏠 Les logements</h2>
+    <p>Clique sur "Voter" pour choisir ton favori</p>
+  </div>
+
+  <div class="grid" id="annoncesGrid">
+
+    <!-- ANNONCE 1 -->
+    <div class="card">
+      <div class="card-badge">⭐ 4,58</div>
+      <div class="card-info">
+        <h3>Annonce 1 — 3 chambres</h3>
+        <div class="card-tags">
+          <span>🛏️ 3 chambres</span>
+          <span>🛌 6 lits</span>
+          <span>🚿 2 salles de bain</span>
+        </div>
+        <p class="card-dates">📅 15 → 22 Août 2026</p>
+      </div>
+      <div class="embed-wrapper">
+        <div class="airbnb-embed-frame" data-id="24417721" data-view="home" data-hide-price="true" style="width:100%;height:300px">
+          <a href="https://www.airbnb.fr/rooms/24417721?check_in=2026-08-15&check_out=2026-08-22&guests=9&adults=9&s=66&source=embed_widget">Voir sur Airbnb</a>
+          <a href="https://www.airbnb.fr/rooms/24417721?check_in=2026-08-15&check_out=2026-08-22&guests=9&adults=9&s=66&source=embed_widget" rel="nofollow">Hébergement · Lloret de Mar · ★4,58 · 3 chambres · 6 lits · 2 salles de bain</a>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="vote-count" id="votes-24417721">0 vote(s)</span>
+        <div class="card-actions">
+          <a href="https://www.airbnb.fr/rooms/24417721?check_in=2026-08-15&check_out=2026-08-22&guests=9&adults=9" target="_blank" class="btn-secondary">Voir 🔗</a>
+          <button class="btn-vote" onclick="openVote('24417721')">Voter 🗳️</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANNONCE 2 -->
+    <div class="card">
+      <div class="card-badge">⭐ 4,0</div>
+      <div class="card-info">
+        <h3>Annonce 2 — 4 chambres</h3>
+        <div class="card-tags">
+          <span>🛏️ 4 chambres</span>
+          <span>🛌 5 lits</span>
+          <span>🚿 3 salles de bain</span>
+        </div>
+        <p class="card-dates">📅 22 → 30 Août 2026</p>
+      </div>
+      <div class="embed-wrapper">
+        <div class="airbnb-embed-frame" data-id="1472318649703002190" data-view="home" data-hide-price="true" style="width:100%;height:300px">
+          <a href="https://www.airbnb.fr/rooms/1472318649703002190?check_in=2026-08-22&check_out=2026-08-30&guests=9&adults=9&s=66&source=embed_widget">Voir sur Airbnb</a>
+          <a href="https://www.airbnb.fr/rooms/1472318649703002190?check_in=2026-08-22&check_out=2026-08-30&guests=9&adults=9&s=66&source=embed_widget" rel="nofollow">Hébergement · Lloret de Mar · ★4,0 · 4 chambres · 5 lits · 3 salles de bain</a>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="vote-count" id="votes-1472318649703002190">0 vote(s)</span>
+        <div class="card-actions">
+          <a href="https://www.airbnb.fr/rooms/1472318649703002190?check_in=2026-08-22&check_out=2026-08-30&guests=9&adults=9" target="_blank" class="btn-secondary">Voir 🔗</a>
+          <button class="btn-vote" onclick="openVote('1472318649703002190')">Voter 🗳️</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANNONCE 3 -->
+    <div class="card">
+      <div class="card-badge gold">⭐ 4,88</div>
+      <div class="card-info">
+        <h3>Annonce 3 — 4 chambres</h3>
+        <div class="card-tags">
+          <span>🛏️ 4 chambres</span>
+          <span>🛌 9 lits</span>
+          <span>🚿 3 salles de bain</span>
+        </div>
+        <p class="card-dates">📅 21 → 28 Août 2026</p>
+      </div>
+      <div class="embed-wrapper">
+        <div class="airbnb-embed-frame" data-id="1025850877705197721" data-view="home" data-hide-price="true" style="width:100%;height:300px">
+          <a href="https://www.airbnb.fr/rooms/1025850877705197721?check_in=2026-08-21&check_out=2026-08-28&guests=9&adults=9&s=66&source=embed_widget">Voir sur Airbnb</a>
+          <a href="https://www.airbnb.fr/rooms/1025850877705197721?check_in=2026-08-21&check_out=2026-08-28&guests=9&adults=9&s=66&source=embed_widget" rel="nofollow">Hébergement · Lloret de Mar · ★4,88 · 4 chambres · 9 lits · 3 salles de bain</a>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="vote-count" id="votes-1025850877705197721">0 vote(s)</span>
+        <div class="card-actions">
+          <a href="https://www.airbnb.fr/rooms/1025850877705197721?check_in=2026-08-21&check_out=2026-08-28&guests=9&adults=9" target="_blank" class="btn-secondary">Voir 🔗</a>
+          <button class="btn-vote" onclick="openVote('1025850877705197721')">Voter 🗳️</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANNONCE 4 -->
+    <div class="card">
+      <div class="card-badge">⭐ 4,79</div>
+      <div class="card-info">
+        <h3>Annonce 4 — 5 chambres</h3>
+        <div class="card-tags">
+          <span>🛏️ 5 chambres</span>
+          <span>🛌 7 lits</span>
+          <span>🚿 2 salles de bain</span>
+        </div>
+        <p class="card-dates">📅 10 → 16 Août 2026</p>
+      </div>
+      <div class="embed-wrapper">
+        <div class="airbnb-embed-frame" data-id="16851583" data-view="home" data-hide-price="true" style="width:100%;height:300px">
+          <a href="https://www.airbnb.fr/rooms/16851583?check_in=2026-08-10&check_out=2026-08-16&guests=9&adults=9&s=66&source=embed_widget">Voir sur Airbnb</a>
+          <a href="https://www.airbnb.fr/rooms/16851583?check_in=2026-08-10&check_out=2026-08-16&guests=9&adults=9&s=66&source=embed_widget" rel="nofollow">Hébergement · Lloret de Mar · ★4,79 · 5 chambres · 7 lits · 2 salles de bain</a>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="vote-count" id="votes-16851583">0 vote(s)</span>
+        <div class="card-actions">
+          <a href="https://www.airbnb.fr/rooms/16851583?check_in=2026-08-10&check_out=2026-08-16&guests=9&adults=9" target="_blank" class="btn-secondary">Voir 🔗</a>
+          <button class="btn-vote" onclick="openVote('16851583')">Voter 🗳️</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANNONCE 5 -->
+    <div class="card">
+      <div class="card-badge gold">⭐ 5,0 ✨</div>
+      <div class="card-info">
+        <h3>Annonce 5 — 4 chambres</h3>
+        <div class="card-tags">
+          <span>🛏️ 4 chambres</span>
+          <span>🛌 5 lits</span>
+          <span>🚿 2 salles de bain</span>
+        </div>
+        <p class="card-dates">📅 10 → 16 Août 2026</p>
+      </div>
+      <div class="embed-wrapper">
+        <div class="airbnb-embed-frame" data-id="1452112624353583315" data-view="home" data-hide-price="true" style="width:100%;height:300px">
+          <a href="https://www.airbnb.fr/rooms/1452112624353583315?check_in=2026-08-10&check_out=2026-08-16&guests=9&adults=9&s=66&source=embed_widget">Voir sur Airbnb</a>
+          <a href="https://www.airbnb.fr/rooms/1452112624353583315?check_in=2026-08-10&check_out=2026-08-16&guests=9&adults=9&s=66&source=embed_widget" rel="nofollow">Hébergement · Lloret de Mar · ★5,0 · 4 chambres · 5 lits · 2 salles de bain</a>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="vote-count" id="votes-1452112624353583315">0 vote(s)</span>
+        <div class="card-actions">
+          <a href="https://www.airbnb.fr/rooms/1452112624353583315?check_in=2026-08-10&check_out=2026-08-16&guests=9&adults=9" target="_blank" class="btn-secondary">Voir 🔗</a>
+          <button class="btn-vote" onclick="openVote('1452112624353583315')">Voter 🗳️</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANNONCE 6 -->
+    <div class="card">
+      <div class="card-badge">🏠 6 chambres</div>
+      <div class="card-info">
+        <h3>Annonce 6 — 6 chambres</h3>
+        <div class="card-tags">
+          <span>🛏️ 6 chambres</span>
+          <span>🛌 8 lits</span>
+          <span>🚿 3 salles de bain</span>
+        </div>
+        <p class="card-dates">📅 10 → 16 Août 2026</p>
+      </div>
+      <div class="embed-wrapper">
+        <div class="airbnb-embed-frame" data-id="1522999700497983636" data-view="home" data-hide-price="true" style="width:100%;height:300px">
+          <a href="https://www.airbnb.fr/rooms/1522999700497983636?check_in=2026-08-10&check_out=2026-08-16&guests=9&adults=9&s=66&source=embed_widget">Voir sur Airbnb</a>
+          <a href="https://www.airbnb.fr/rooms/1522999700497983636?check_in=2026-08-10&check_out=2026-08-16&guests=9&adults=9&s=66&source=embed_widget" rel="nofollow">Hébergement · Lloret de Mar · 6 chambres · 8 lits · 3 salles de bain</a>
+        </div>
+      </div>
+      <div class="card-footer">
+        <span class="vote-count" id="votes-1522999700497983636">0 vote(s)</span>
+        <div class="card-actions">
+          <a href="https://www.airbnb.fr/rooms/1522999700497983636?check_in=2026-08-10&check_out=2026-08-16&guests=9&adults=9" target="_blank" class="btn-secondary">Voir 🔗</a>
+          <button class="btn-vote" onclick="openVote('1522999700497983636')">Voter 🗳️</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /grid -->
+
+  <!-- RÉSULTATS -->
+  <div class="results-section">
+    <h2>📊 Résultats en direct</h2>
+    <div id="resultsContainer"></div>
+  </div>
+
+</main>
+
+<footer>
+  <span>🌊 Lloret de Mar 2026</span>
+  <button class="btn-admin-trigger" onclick="document.getElementById('loginOverlay').style.display='flex'" title="Admin">⚙️</button>
+  <span>Made with ❤️</span>
+</footer>
+
+<script async src="https://www.airbnb.fr/embeddable/airbnb_jssdk"></script>
+
+<script>
+// ===== FIREBASE =====
+const firebaseConfig = {
+  apiKey: "AIzaSyBbEwwDPhhsp6aLHGICBQ8Iaj3Jbghr6RI",
+  authDomain: "lloretdemarvote.firebaseapp.com",
+  projectId: "lloretdemarvote",
+  storageBucket: "lloretdemarvote.firebasestorage.app",
+  messagingSenderId: "344067987510",
+  appId: "1:344067987510:web:4ec9a9d31d3a1019716097",
+  measurementId: "G-DBLJKPKJE2",
+  databaseURL: "https://lloretdemarvote-default-rtdb.europe-west1.firebasedatabase.app/"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ===== IDs des annonces =====
+const annonces = [
+  {id:'24417721', titre:'Annonce 1 — 3 chambres'},
+  {id:'1472318649703002190', titre:'Annonce 2 — 4 chambres'},
+  {id:'1025850877705197721', titre:'Annonce 3 — 4 chambres'},
+  {id:'16851583', titre:'Annonce 4 — 5 chambres'},
+  {id:'1452112624353583315', titre:'Annonce 5 — 4 chambres'},
+  {id:'1522999700497983636', titre:'Annonce 6 — 6 chambres'},
+];
+
+// ===== ADMIN =====
+let isAdmin = false;
+const ADMIN_PASSWORD = "lloret2026";
+
+function checkLogin() {
+  const pw = document.getElementById('pwInput').value;
+  if(pw === ADMIN_PASSWORD) {
+    isAdmin = true;
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('adminBar').style.display = 'flex';
+    document.getElementById('loginError').textContent = '';
+  } else {
+    document.getElementById('loginError').textContent = '❌ Mot de passe incorrect';
+  }
 }
 
-body{
-  font-family:'Segoe UI',system-ui,sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
+function logout() {
+  isAdmin = false;
+  document.getElementById('adminBar').style.display = 'none';
 }
 
-/* ===== HEADER ===== */
-header{
-  background:linear-gradient(135deg,#0ea5e9 0%,#0369a1 50%,#1e3a5f 100%);
-  padding:60px 24px 50px;
-  text-align:center;
-  position:relative;
-  overflow:hidden;
-}
-header::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(circle at 30% 50%,rgba(255,255,255,0.08),transparent 60%);
-}
-header::after{
-  content:'🏖️ 🌴 ☀️ 🏖️ 🌴 ☀️ 🏖️ 🌴 ☀️ 🏖️';
-  position:absolute;bottom:10px;left:0;right:0;
-  font-size:1.5rem;opacity:0.15;letter-spacing:8px;
-  text-align:center;
-}
-.header-content{position:relative;z-index:1}
-.wave-emoji{
-  font-size:3.5rem;display:inline-block;margin-bottom:12px;
-  animation:wave 2s ease-in-out infinite;
-}
-@keyframes wave{0%,100%{transform:rotate(-10deg)}50%{transform:rotate(10deg)}}
-header h1{
-  color:#fff;font-size:clamp(1.8rem,5vw,3rem);
-  font-weight:800;margin-bottom:8px;
-  text-shadow:0 2px 10px rgba(0,0,0,0.2);
-}
-.header-sub{color:rgba(255,255,255,0.82);font-size:1.1rem;margin-bottom:20px}
-.header-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
-.header-chips span{
-  background:rgba(255,255,255,0.15);
-  backdrop-filter:blur(10px);
-  color:#fff;padding:6px 16px;border-radius:50px;
-  font-size:0.88rem;font-weight:600;
-  border:1px solid rgba(255,255,255,0.25);
+// ===== VOTE =====
+let currentVoteId = null;
+
+function openVote(annonceId) {
+  currentVoteId = annonceId;
+  document.getElementById('voterName').value = '';
+  document.getElementById('voteError').textContent = '';
+  document.getElementById('voteOverlay').style.display = 'flex';
 }
 
-/* ===== ADMIN BAR ===== */
-.admin-bar{
-  background:linear-gradient(90deg,#1e3a5f,#0ea5e9);
-  color:#fff;padding:10px 24px;
-  display:flex;align-items:center;justify-content:space-between;
-  font-weight:600;font-size:0.95rem;
-}
-.btn-logout{
-  background:rgba(255,255,255,0.18);color:#fff;
-  border:1px solid rgba(255,255,255,0.3);
-  padding:6px 14px;border-radius:8px;font-size:0.85rem;
-  transition:background 0.2s;
-}
-.btn-logout:hover{background:rgba(255,255,255,0.3)}
+function confirmVote() {
+  const name = document.getElementById('voterName').value.trim().toLowerCase();
+  if(!name) {
+    document.getElementById('voteError').textContent = '⚠️ Entre ton prénom !';
+    return;
+  }
 
-/* ===== MAIN ===== */
-main{max-width:1300px;margin:0 auto;padding:40px 20px 60px}
-
-.section-title{text-align:center;margin-bottom:32px}
-.section-title h2{font-size:1.8rem;font-weight:800;margin-bottom:6px}
-.section-title p{color:var(--text-light)}
-
-/* ===== GRID ===== */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(340px,1fr));
-  gap:24px;
-  margin-bottom:60px;
+  const voteRef = db.ref('votes/' + currentVoteId + '/' + name);
+  voteRef.once('value').then(snap => {
+    if(snap.exists()) {
+      document.getElementById('voteError').textContent = '❌ Tu as déjà voté pour cette annonce !';
+    } else {
+      // Vérifier si l'utilisateur a déjà voté pour une autre annonce
+      const allVotesRef = db.ref('votes');
+      allVotesRef.once('value').then(allSnap => {
+        let alreadyVoted = false;
+        allSnap.forEach(annonceSnap => {
+          if(annonceSnap.key !== currentVoteId && annonceSnap.child(name).exists()) {
+            alreadyVoted = true;
+          }
+        });
+        if(alreadyVoted) {
+          document.getElementById('voteError').textContent = '❌ ' + name + ' a déjà voté pour une autre annonce !';
+        } else {
+          voteRef.set(true).then(() => {
+            document.getElementById('voteOverlay').style.display = 'none';
+            alert('✅ Merci ' + document.getElementById('voterName').value.trim() + ' ! Ton vote a été enregistré.');
+          });
+        }
+      });
+    }
+  });
 }
 
-/* ===== CARD ===== */
-.card{
-  background:var(--card);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
-  overflow:hidden;
-  transition:transform 0.2s,box-shadow 0.2s;
-  position:relative;
-  display:flex;flex-direction:column;
-}
-.card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+// ===== LECTURE VOTES EN TEMPS RÉEL =====
+db.ref('votes').on('value', snap => {
+  const data = snap.val() || {};
+  
+  annonces.forEach(a => {
+    const count = data[a.id] ? Object.keys(data[a.id]).length : 0;
+    const el = document.getElementById('votes-' + a.id);
+    if(el) el.textContent = count + ' vote(s)';
+  });
 
-.card-badge{
-  position:absolute;top:12px;left:12px;z-index:5;
-  background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);
-  color:#fff;padding:4px 12px;border-radius:50px;
-  font-size:0.82rem;font-weight:700;
-}
-.card-badge.gold{background:linear-gradient(135deg,var(--gold),var(--orange));color:#fff}
+  // Résultats
+  const results = annonces.map(a => ({
+    ...a,
+    count: data[a.id] ? Object.keys(data[a.id]).length : 0,
+    voters: data[a.id] ? Object.keys(data[a.id]) : []
+  })).sort((a,b) => b.count - a.count);
 
-.card-info{padding:16px 16px 0}
-.card-info h3{font-size:1.05rem;font-weight:700;margin-bottom:8px}
+  const container = document.getElementById('resultsContainer');
+  container.innerHTML = results.map((r, i) => `
+    <div class="result-row ${i===0&&r.count>0?'winner':''}">
+      <div class="result-rank">${i===0&&r.count>0?'🏆':i+1}</div>
+      <div class="result-info">
+        <strong>${r.titre}</strong>
+        <div class="result-voters">${r.voters.length ? r.voters.map(v=>v.charAt(0).toUpperCase()+v.slice(1)).join(', ') : 'Aucun vote'}</div>
+      </div>
+      <div class="result-bar-wrap">
+        <div class="result-bar" style="width:${results[0].count>0?(r.count/results[0].count*100):0}%"></div>
+      </div>
+      <div class="result-count">${r.count} 🗳️</div>
+    </div>
+  `).join('');
+});
 
-.card-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
-.card-tags span{
-  background:var(--bg);border:1px solid var(--border);
-  padding:3px 10px;border-radius:50px;font-size:0.78rem;color:var(--text-light);
-  font-weight:600;
-}
-.card-dates{font-size:0.82rem;color:var(--blue);font-weight:600;margin-bottom:12px}
-
-/* ===== EMBED AIRBNB ===== */
-.embed-wrapper{
-  width:100%;overflow:hidden;
-  border-top:1px solid var(--border);
-  border-bottom:1px solid var(--border);
-  min-height:300px;
-}
-.embed-wrapper .airbnb-embed-frame{width:100% !important;height:300px !important}
-
-/* ===== CARD FOOTER ===== */
-.card-footer{
-  padding:12px 16px 16px;
-  display:flex;align-items:center;justify-content:space-between;
-  margin-top:auto;
-}
-.vote-count{font-size:0.85rem;color:var(--text-light);font-weight:700}
-.card-actions{display:flex;gap:8px}
-
-.btn-vote{
-  background:linear-gradient(135deg,var(--blue),var(--blue-dark));
-  color:#fff;border:none;padding:8px 16px;
-  border-radius:8px;font-size:0.88rem;font-weight:700;
-  transition:transform 0.15s,box-shadow 0.15s;
-}
-.btn-vote:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(14,165,233,0.4)}
-
-.btn-secondary{
-  background:var(--bg);color:var(--text);
-  border:2px solid var(--border);padding:8px 14px;
-  border-radius:8px;font-size:0.88rem;font-weight:700;
-  transition:border-color 0.2s;display:inline-block;
-}
-.btn-secondary:hover{border-color:var(--blue);color:var(--blue)}
-
-/* ===== RÉSULTATS ===== */
-.results-section{
-  background:var(--card);border-radius:var(--radius);
-  box-shadow:var(--shadow);padding:32px;
-}
-.results-section h2{font-size:1.5rem;font-weight:800;margin-bottom:24px;text-align:center}
-
-.result-row{
-  display:grid;
-  grid-template-columns:40px 1fr 120px 60px;
-  gap:12px;align-items:center;
-  padding:12px 16px;border-radius:12px;
-  margin-bottom:10px;
-  background:var(--bg);
-  transition:background 0.2s;
-}
-.result-row.winner{background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid var(--gold)}
-.result-rank{font-size:1.2rem;font-weight:800;text-align:center}
-.result-info strong{font-size:0.95rem;display:block}
-.result-voters{font-size:0.78rem;color:var(--text-light);margin-top:2px}
-.result-bar-wrap{background:var(--border);border-radius:50px;height:8px;overflow:hidden}
-.result-bar{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-dark));border-radius:50px;transition:width 0.5s ease}
-.result-row.winner .result-bar{background:linear-gradient(90deg,var(--gold),var(--orange))}
-.result-count{font-size:1rem;font-weight:800;text-align:right;color:var(--blue)}
-.result-row.winner .result-count{color:var(--gold)}
-
-/* ===== OVERLAYS / MODALS ===== */
-.overlay{
-  position:fixed;inset:0;
-  background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);
-  z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;
-}
-.modal{
-  background:#fff;border-radius:var(--radius);
-  position:relative;width:100%;max-width:400px;
-  padding:40px 32px;text-align:center;
-  animation:slideUp 0.25s ease;
-}
-@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
-.modal h2{font-size:1.4rem;font-weight:800;margin-bottom:8px}
-.modal p{color:var(--text-light);margin-bottom:20px}
-.modal-icon{font-size:3rem;margin-bottom:16px}
-
-.close-btn{
-  position:absolute;top:14px;right:14px;
-  background:var(--bg);border:none;border-radius:50%;
-  width:34px;height:34px;font-size:1rem;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-}
-.close-btn:hover{background:var(--border)}
-
-.input-field{
-  width:100%;background:var(--bg);border:2px solid var(--border);
-  border-radius:10px;padding:11px 14px;
-  font-size:0.95rem;color:var(--text);
-  transition:border-color 0.2s;font-family:inherit;
-  margin-bottom:4px;
-}
-.input-field:focus{outline:none;border-color:var(--blue)}
-
-.btn-primary{
-  background:linear-gradient(135deg,var(--blue),var(--blue-dark));
-  color:#fff;border:none;padding:12px 24px;border-radius:10px;
-  font-size:0.95rem;font-weight:700;width:100%;margin-top:12px;
-  transition:transform 0.15s,box-shadow 0.15s;cursor:pointer;
-}
-.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(14,165,233,0.4)}
-
-.error-msg{color:var(--red);font-size:0.85rem;margin-top:10px;min-height:20px}
-
-/* ===== FOOTER ===== */
-footer{
-  background:var(--text);color:rgba(255,255,255,0.5);
-  padding:20px 24px;text-align:center;
-  display:flex;align-items:center;justify-content:center;
-  gap:16px;font-size:0.88rem;
-}
-.btn-admin-trigger{
-  background:rgba(255,255,255,0.1);border:none;border-radius:50%;
-  width:34px;height:34px;font-size:1rem;
-  display:flex;align-items:center;justify-content:center;
-  transition:background 0.2s;cursor:pointer;
-}
-.btn-admin-trigger:hover{background:rgba(255,255,255,0.2)}
-
-/* ===== RESPONSIVE ===== */
-@media(max-width:640px){
-  .grid{grid-template-columns:1fr}
-  .result-row{grid-template-columns:30px 1fr 60px}
-  .result-bar-wrap{display:none}
-  main{padding:24px 12px 40px}
-}
+// Fermer modals en cliquant dehors
+document.querySelectorAll('.overlay').forEach(el => {
+  el.addEventListener('click', e => { if(e.target===el) el.style.display='none'; });
+});
+</script>
+</body>
+</html>
