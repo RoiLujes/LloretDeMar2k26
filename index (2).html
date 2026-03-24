@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🌊 Lloret 2026 — Vote</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-content">
+    <div class="header-emoji">🌊</div>
+    <h1>Lloret de Mar 2026</h1>
+    <p>Vote pour ton logement préféré</p>
+    <div class="header-date">📅 15 → 22 Août 2026 · 7 nuits · 9 personnes</div>
+  </div>
+</header>
+
+<!-- ADMIN LOGIN -->
+<div id="adminBar" style="display:none;">
+  <div class="admin-bar">
+    <span>👑 Mode Admin activé</span>
+    <button onclick="logout()" class="btn-logout">Se déconnecter</button>
+  </div>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal-box login-box">
+    <button class="modal-close" onclick="closeLogin()">✕</button>
+    <div class="login-icon">👑</div>
+    <h2>Accès Admin</h2>
+    <p>Réservé à l'organisateur</p>
+    <input type="password" id="pwInput" placeholder="Mot de passe..." class="pw-input" onkeydown="if(event.key==='Enter')checkLogin()">
+    <button onclick="checkLogin()" class="btn-login">Connexion</button>
+    <div id="loginError" class="login-error"></div>
+  </div>
+</div>
+
+<!-- VOTES RÉSUMÉ -->
+<div class="votes-summary" id="votesSummary">
+  <div class="container">
+    <h2>📊 Résultats en direct</h2>
+    <div class="votes-bars" id="votesBars"></div>
+  </div>
+</div>
+
+<!-- CARDS GRID -->
+<main>
+  <div class="container">
+
+    <div class="section-title">
+      <h2>🏠 Les logements</h2>
+      <p>Clique sur une carte pour voir les détails et voter</p>
+    </div>
+
+    <!-- ADMIN: Ajouter une annonce -->
+    <div id="adminAddSection" style="display:none;">
+      <div class="admin-add-card" onclick="openAddModal()">
+        <div class="add-icon">＋</div>
+        <p>Ajouter une annonce</p>
+      </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+  </div>
+</main>
+
+<!-- MODAL DÉTAIL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-box detail-box">
+    <button class="modal-close" onclick="closeDetail()">✕</button>
+    <div id="detailBody"></div>
+  </div>
+</div>
+
+<!-- MODAL AJOUTER (ADMIN) -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal-box add-box">
+    <button class="modal-close" onclick="closeAddModal()">✕</button>
+    <h2>➕ Ajouter une annonce</h2>
+    <div class="form-grid">
+      <input id="f_titre" placeholder="Titre du logement" class="form-input">
+      <input id="f_lieu" placeholder="Ville, Pays" class="form-input">
+      <input id="f_emoji" placeholder="Emoji (ex: 🏖️)" class="form-input">
+      <input id="f_chambres" placeholder="Nb chambres" type="number" class="form-input">
+      <input id="f_lits" placeholder="Nb lits" type="number" class="form-input">
+      <input id="f_sdb" placeholder="Nb salles de bain" type="number" class="form-input">
+      <input id="f_capacite" placeholder="Capacité max" type="number" class="form-input">
+      <input id="f_prix" placeholder="Prix / nuit (€)" type="number" class="form-input">
+      <input id="f_note" placeholder="Note (ex: 4.8)" type="number" step="0.1" class="form-input">
+      <input id="f_avis" placeholder="Nb d'avis" type="number" class="form-input">
+      <input id="f_lien" placeholder="Lien Airbnb" class="form-input full">
+      <input id="f_tags" placeholder="Tags séparés par virgule (Piscine, WiFi...)" class="form-input full">
+      <textarea id="f_desc" placeholder="Description..." class="form-input full" rows="3"></textarea>
+    </div>
+    <button onclick="saveAnnonce()" class="btn-save">💾 Sauvegarder</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <p>🌊 Lloret 2026 · Fait avec ❤️</p>
+    <button class="btn-admin-trigger" onclick="openLogin()">👑</button>
+  </div>
+</footer>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, push, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// 🔥 REMPLACE PAR TA CONFIG FIREBASE
+const firebaseConfig = {
+  apiKey: "AIzaSyBbEwwDPhhsp6aLHGICBQ8Iaj3Jbghr6RI",
+  authDomain: "lloretdemarvote.firebaseapp.com",
+  databaseURL: "https://lloretdemarvote-default-rtdb.europe-west1.firebasedatabase.app/",
+  projectId: "lloretdemarvote",
+  storageBucket: "lloretdemarvote.firebasestorage.app",
+  messagingSenderId: "344067987510",
+  appId: "1:344067987510:web:4ec9a9d31d3a1019716097"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const ADMIN_PASSWORD = "lloret2026";
+
+// ============ DONNÉES DE BASE (Annonces fixes) ============
+const annoncesBase = [
+  {
+    id: "annonce1",
+    titre: "Villa avec piscine privée",
+    lieu: "Lloret de Mar, Espagne",
+    emoji: "🏊",
+    chambres: 5,
+    lits: 9,
+    sdb: 3,
+    capacite: 9,
+    prix: 320,
+    note: 4.8,
+    avis: 47,
+    description: "Magnifique villa avec piscine privée à Lloret de Mar. Idéale pour les grands groupes, à quelques minutes des plages et du centre animé. Terrasse spacieuse, barbecue, vue dégagée sur la mer.",
+    tags: ["Piscine", "Terrasse", "Barbecue", "WiFi", "Parking", "Clim"],
+    lien: "https://www.airbnb.fr/rooms/24417721?adults=9&check_in=2026-08-15&check_out=2026-08-22&guests=9"
+  },
+  {
+    id: "annonce2",
+    titre: "Grande maison près de la plage",
+    lieu: "Lloret de Mar, Espagne",
+    emoji: "🌊",
+    chambres: 4,
+    lits: 8,
+    sdb: 2,
+    capacite: 8,
+    prix: 260,
+    note: 4.7,
+    avis: 63,
+    description: "Superbe maison à 5 min à pied de la plage de Lloret de Mar. Grand séjour, cuisine équipée, terrasse avec vue. Parfaite pour profiter de l'été espagnol en grand groupe.",
+    tags: ["Plage proche", "Terrasse", "WiFi", "Clim", "Cuisine"],
+    lien: "https://www.airbnb.fr/rooms/1522999700497983636"
+  },
+  {
+    id: "annonce3",
+    titre: "Villa de luxe vue mer",
+    lieu: "Lloret de Mar, Espagne",
+    emoji: "🌅",
+    chambres: 6,
+    lits: 10,
+    sdb: 4,
+    capacite: 10,
+    prix: 450,
+    note: 4.9,
+    avis: 28,
+    description: "Villa d'exception avec vue panoramique sur la mer. Piscine à débordement, terrasses multiples, intérieur haut de gamme. La référence absolue pour un séjour inoubliable à Lloret.",
+    tags: ["Vue mer", "Piscine", "Luxe", "Jacuzzi", "WiFi", "Parking", "Clim"],
+    lien: "https://www.airbnb.fr/rooms/16851583"
+  },
+  {
+    id: "annonce4",
+    titre: "Appartement moderne centre-ville",
+    lieu: "Lloret de Mar, Espagne",
+    emoji: "🏙️",
+    chambres: 3,
+    lits: 7,
+    sdb: 2,
+    capacite: 7,
+    prix: 190,
+    note: 4.6,
+    avis: 89,
+    description: "Appartement moderne et lumineux en plein centre de Lloret. Idéalement placé pour profiter des bars, restaurants et de la plage à pied. Tout le confort avec une déco soignée.",
+    tags: ["Centre-ville", "WiFi", "Clim", "Cuisine", "Plage proche"],
+    lien: "https://www.airbnb.fr/rooms/1452112624353583315"
+  }
+];
+
+// ============ STATE ============
+let isAdmin = false;
+let allAnnonces = [...annoncesBase];
+let allVotes = {};
+let myVoteId = localStorage.getItem('myVoteId') || null;
+let myVoteAnnonce = localStorage.getItem('myVoteAnnonce') || null;
+
+// ============ FIREBASE LISTENERS ============
+// Votes en temps réel
+onValue(ref(db, 'votes'), (snap) => {
+  allVotes = snap.val() || {};
+  renderAll();
+  renderVotesSummary();
+});
+
+// Annonces customs (ajoutées par admin)
+onValue(ref(db, 'annonces'), (snap) => {
+  const extras = snap.val() || {};
+  allAnnonces = [...annoncesBase, ...Object.entries(extras).map(([k,v]) => ({...v, id: k, isCustom: true}))];
+  renderAll();
+  renderVotesSummary();
+});
+
+// ============ RENDER ============
+window.renderAll = function() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  allAnnonces.forEach(a => {
+    const voteCount = countVotes(a.id);
+    const iVoted = myVoteAnnonce === a.id;
+    const card = document.createElement('div');
+    card.className = 'card' + (iVoted ? ' card-voted' : '');
+    card.innerHTML = `
+      <div class="card-emoji-bg">${a.emoji}</div>
+      <div class="card-content">
+        <div class="card-top">
+          <div class="card-badge">🇪🇸 Espagne</div>
+          ${isAdmin && a.isCustom ? `<button class="btn-delete" onclick="deleteAnnonce('${a.id}')">🗑️</button>` : ''}
+          ${iVoted ? '<div class="voted-ribbon">Mon vote ✓</div>' : ''}
+        </div>
+        <h3 class="card-title">${a.titre}</h3>
+        <div class="card-location">📍 ${a.lieu}</div>
+        <div class="card-stars">${getStars(a.note)} <span>${a.note}</span> · ${a.avis} avis</div>
+        <div class="card-infos">
+          <span>🛏️ ${a.chambres} ch.</span>
+          <span>🛌 ${a.lits} lits</span>
+          <span>🚿 ${a.sdb} sdb</span>
+          <span>👥 ${a.capacite} pers.</span>
+        </div>
+        <div class="card-footer">
+          <div class="card-price">${a.prix}€<small>/nuit</small></div>
+          <div class="card-actions">
+            <div class="vote-count ${iVoted ? 'vote-mine' : ''}">❤️ ${voteCount}</div>
+            <button class="btn-detail" onclick="openDetail('${a.id}')">Voir</button>
+          </div>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+window.renderVotesSummary = function() {
+  const bars = document.getElementById('votesBars');
+  const total = Object.keys(allVotes).length;
+  bars.innerHTML = '';
+  allAnnonces.forEach(a => {
+    const count = countVotes(a.id);
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    bars.innerHTML += `
+      <div class="vote-bar-item">
+        <div class="vb-label">
+          <span>${a.emoji} ${a.titre}</span>
+          <strong>${count} vote${count > 1 ? 's' : ''} (${pct}%)</strong>
+        </div>
+        <div class="vb-track">
+          <div class="vb-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+    `;
+  });
+  if(total === 0) bars.innerHTML = '<p class="no-votes">Aucun vote pour l\'instant... Soyez le premier ! 🗳️</p>';
+}
+
+// ============ VOTES ============
+window.countVotes = function(annonceId) {
+  return Object.values(allVotes).filter(v => v.annonce === annonceId).length;
+}
+
+window.voter = function(annonceId) {
+  if(myVoteId) {
+    // Déjà voté — on retire si même annonce
+    if(myVoteAnnonce === annonceId) {
+      remove(ref(db, 'votes/' + myVoteId));
+      localStorage.removeItem('myVoteId');
+      localStorage.removeItem('myVoteAnnonce');
+      myVoteId = null;
+      myVoteAnnonce = null;
+      return;
+    } else {
+      // Changer son vote
+      remove(ref(db, 'votes/' + myVoteId));
+    }
+  }
+  const newRef = push(ref(db, 'votes'));
+  set(newRef, { annonce: annonceId, ts: Date.now() });
+  myVoteId = newRef.key;
+  myVoteAnnonce = annonceId;
+  localStorage.setItem('myVoteId', myVoteId);
+  localStorage.setItem('myVoteAnnonce', myVoteAnnonce);
+  closeDetail();
+}
+
+// ============ DETAIL MODAL ============
+window.openDetail = function(id) {
+  const a = allAnnonces.find(x => x.id === id);
+  const iVoted = myVoteAnnonce === id;
+  const voteCount = countVotes(id);
+  document.getElementById('detailBody').innerHTML = `
+    <div class="detail-emoji">${a.emoji}</div>
+    <div class="card-badge" style="display:inline-block;margin-bottom:10px;">🇪🇸 Espagne</div>
+    <h2 class="detail-title">${a.titre}</h2>
+    <div class="card-location">📍 ${a.lieu}</div>
+    <div class="card-stars" style="margin:8px 0;">${getStars(a.note)} ${a.note} · ${a.avis} avis</div>
+    <div class="detail-infos">
+      <div class="di-box"><div class="di-val">${a.chambres}</div><div class="di-lbl">Chambres</div></div>
+      <div class="di-box"><div class="di-val">${a.lits}</div><div class="di-lbl">Lits</div></div>
+      <div class="di-box"><div class="di-val">${a.sdb}</div><div class="di-lbl">SDB</div></div>
+      <div class="di-box"><div class="di-val">${a.capacite}</div><div class="di-lbl">Pers. max</div></div>
+    </div>
+    <div class="di-box" style="text-align:center;margin:10px 0;">
+      <div class="di-val" style="color:#FF385C;">${a.prix}€<small style="font-size:0.7rem;font-weight:400;">/nuit</small></div>
+      <div class="di-lbl">Prix indicatif</div>
+    </div>
+    <p class="detail-desc">${a.description}</p>
+    <div class="detail-tags">${a.tags.map(t=>`<span class="tag">✓ ${t}</span>`).join('')}</div>
+    <div class="detail-vote-count">❤️ ${voteCount} vote${voteCount > 1 ? 's' : ''}</div>
+    <button class="btn-vote ${iVoted ? 'btn-vote-active' : ''}" onclick="voter('${a.id}')">
+      ${iVoted ? '💔 Retirer mon vote' : '❤️ Voter pour ce logement'}
+    </button>
+    <a href="${a.lien}" target="_blank" class="btn-airbnb">🔗 Voir sur Airbnb</a>
+  `;
+  document.getElementById('detailModal').classList.add('active');
+}
+
+window.closeDetail = function() {
+  document.getElementById('detailModal').classList.remove('active');
+}
+
+// ============ ADMIN ============
+window.openLogin = function() {
+  document.getElementById('loginModal').classList.add('active');
+}
+window.closeLogin = function() {
+  document.getElementById('loginModal').classList.remove('active');
+}
+window.checkLogin = function() {
+  const pw = document.getElementById('pwInput').value;
+  if(pw === ADMIN_PASSWORD) {
+    isAdmin = true;
+    document.getElementById('adminBar').style.display = 'block';
+    document.getElementById('adminAddSection').style.display = 'block';
+    closeLogin();
+    renderAll();
+  } else {
+    document.getElementById('loginError').textContent = '❌ Mot de passe incorrect';
+  }
+}
+window.logout = function() {
+  isAdmin = false;
+  document.getElementById('adminBar').style.display = 'none';
+  document.getElementById('adminAddSection').style.display = 'none';
+  renderAll();
+}
+
+window.openAddModal = function() {
+  document.getElementById('addModal').classList.add('active');
+}
+window.closeAddModal = function() {
+  document.getElementById('addModal').classList.remove('active');
+}
+
+window.saveAnnonce = function() {
+  const obj = {
+    titre: document.getElementById('f_titre').value,
+    lieu: document.getElementById('f_lieu').value,
+    emoji: document.getElementById('f_emoji').value || '🏠',
+    chambres: +document.getElementById('f_chambres').value,
+    lits: +document.getElementById('f_lits').value,
+    sdb: +document.getElementById('f_sdb').value,
+    capacite: +document.getElementById('f_capacite').value,
+    prix: +document.getElementById('f_prix').value,
+    note: +document.getElementById('f_note').value,
+    avis: +document.getElementById('f_avis').value,
+    lien: document.getElementById('f_lien').value,
+    tags: document.getElementById('f_tags').value.split(',').map(t=>t.trim()),
+    description: document.getElementById('f_desc').value,
+  };
+  push(ref(db, 'annonces'), obj);
+  closeAddModal();
+}
+
+window.deleteAnnonce = function(id) {
+  if(confirm('Supprimer cette annonce ?')) remove(ref(db, 'annonces/' + id));
+}
+
+// ============ UTILS ============
+window.getStars = function(note) {
+  const full = Math.floor(note);
+  return '★'.repeat(full) + '☆'.repeat(5-full);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', function(e) {
+    if(e.target === el) el.classList.remove('active');
+  });
+});
+
+</script>
+</body>
+</html>
